@@ -11,9 +11,9 @@ class DonationRequest extends Model
     public $timestamps = true;
     protected $fillable = array('patient_name', 'age', 'blood_type_id', 'bags_num', 'hospital_name', 'phone', 'city_id', 'latitude', 'longitude', 'notes', 'hospital_address', 'client_id');
 
-    public function notifications()
+    public function notification()
     {
-        return $this->hasMany('App\Models\Notification');
+        return $this->hasOne('App\Models\Notification');
     }
 
     public function blood_type()

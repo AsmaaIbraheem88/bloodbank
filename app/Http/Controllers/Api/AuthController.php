@@ -50,7 +50,7 @@ class AuthController extends Controller
       $client = Client::create($request->all());
       $client->api_token = str_random('60');
       $client->save();
-      return responseJson('1','ﺡﺎﺠﻨﺑ ﻪﻓﺎﺿا ﻢﺗ',[
+      return responseJson('1','you added successfully',[
 
        'api_token'=>$client->api_token,
        'client'=>$client
@@ -66,7 +66,7 @@ class AuthController extends Controller
 
     {
 
-      //return $request->all();
+      // return $request->all();
 
       $validator = validator()->make($request->all(),[
 
@@ -89,7 +89,15 @@ class AuthController extends Controller
        
        if(Hash::check($request->password,$client->password))
        {
-        return responseJson('1','ﻝﻮﺧﺪﻟا ﻞﻴﺠﺴﺗ ﻢﺗ',[
+
+        //Check if client active or no 
+        
+        if( $client->is_active == 0)
+        {
+          return responseJson('0','you are unactive  ');
+        }
+        
+        return responseJson('1','you are login',[
 
          'api_token' =>$client->api_token,
          'client' =>$client
@@ -97,11 +105,11 @@ class AuthController extends Controller
         ]);
        }else
        {
-        return responseJson('0','ﻪﺤﻴﺤﺻ ﺮﻴﻏ ﻝﻮﺧﺪﻟا ﺕﺎﻧﺎﻴﺒﻟ');
+        return responseJson('invalid data');
        }
       }else
       {
-       return responseJson('0','ﻪﺤﻴﺤﺻ ﺮﻴﻏ ﻝﻮﺧﺪﻟا ﺕﺎﻧﺎﻴﺒﻟ');
+       return responseJson('0','invalid data');
       }
 
     }
@@ -109,7 +117,7 @@ class AuthController extends Controller
 
     /////////////////////////////////////////////////////////////////
 
-     public function ResetPassword(Request $request )
+     public function resetPassword(Request $request )
      {
           $user = Client::where('phone',$request->phone)->first();
 
@@ -126,7 +134,7 @@ class AuthController extends Controller
                ->bcc('e.semsema27@yahoo.com')
                ->send(new ResetPassword($code));
 
-               return responseJson('1','ﻚﻠﻴﻤﻳا ﺺﺤﻓ ءﺎﺟﺮﺑ', $user->pin_code);
+               return responseJson('1','please check your phone', $user->pin_code);
 
           }
 
@@ -136,7 +144,7 @@ class AuthController extends Controller
     
     /////////////////////////////////////////////////////////////////
 
-     public function ChangePassword(Request $request )
+     public function changePassword(Request $request )
      {
 
 
@@ -177,31 +185,16 @@ class AuthController extends Controller
                
                if($user->save())
                {
-                     return responseJson('1','ﺡﺎﺠﻨﺑ ﺭﻭﺮﻤﻟا ﻪﻤﻠﻛ ﺮﻴﻴﻐﺗ ﻢﺗ');
+                     return responseJson('1','password change successfully ');
                }else
                {
-                     return responseJson('0','ﺎﻄﺧ ﺙﺪﺣ');
+                     return responseJson('0','something wrong');
                }
 
           }else
           {
-               return responseJson('0','ﺢﻟﺎﺻ ﺮﻴﻏ ﺩﻮﻜﻟا اﺬﻫ');
+               return responseJson('0','in valid data');
           }
-
-
-
-          $request->merge(['password'=>bcrypt($request->password)]);
-          $client = Client::create($request->all());
-          $client->api_token = str_random('60');
-          $client->save();
-          return responseJson('1','ﺡﺎﺠﻨﺑ ﻪﻓﺎﺿا ﻢﺗ',[
-
-               'api_token'=>$client->api_token,
-               'client'=>$client
-
-          ]);
-
-
 
 
      }
@@ -214,9 +207,9 @@ class AuthController extends Controller
         
 
         $validator = validator()->make($request->all(),[
-
-          'email'=>Rule::unique('clients')->ignore($request->user()->id),  
-          'phone'=>Rule::unique('clients')->ignore($request->user()->id),
+          'name' =>'required',
+          'email'=>[Rule::unique('clients')->ignore($request->user()->id),'required']  ,
+          'phone'=>[Rule::unique('clients')->ignore($request->user()->id),'required']  ,
           'password'=>'confirmed', 
         
 
@@ -233,6 +226,9 @@ class AuthController extends Controller
 
       $LoginUser = $request->user();
 
+      $LoginUser->name = $request->name;
+      $LoginUser->email = $request->email;
+      $LoginUser->phone = $request->phone;
 
       $LoginUser->update($request->all());
 
@@ -252,47 +248,48 @@ class AuthController extends Controller
       ];
 
 
-       return responseJson('1','ﺕﺎﻧﺎﻴﺒﻟا ﺚﻳﺪﺤﺗ ﻢﺗ',$data);
+       return responseJson('1','data updated successfully ',$data);
 
 
 
     }
 
+/////////////////////////////////////////////////////////////////////////
 
-    ////////////////////////////////////////////////////////////////
-
-    public function notificationsSettings(Request $request )
+    public function notificationsSettings(Request $request)
     {
 
-      $validator = validator()->make($request->all(),[
+     
 
-       'governorates.*'=>'exists:governorates,id',
-       'blood_types.*'=>'exists:blood_types,id',
-      
+      if($request->input('action') == 'save')
 
-      ]);
-
-      if($validator->fails())
       {
-          $data = $validator->errors();
-          return responseJson('0',$validator->errors()->first(),$data);
+        
+        $validator = validator()->make($request->all(),[
+
+          'governorates.*'=>'exists:governorates,id',
+          'blood_types.*'=>'exists:blood_types,id',
+         
+   
+        ]);
+   
+        if($validator->fails())
+        {
+             $data = $validator->errors();
+             return responseJson('0',$validator->errors()->first(),$data);
+   
+        }
+
+        
+          $request->user()->governorates()->sync($request->governorates);
+        
+  
+          $request->user()->blood_types()->sync($request->blood_types);
+       
 
       }
 
-      if($request->has('governorates'))
-
-      {
-
-        $request->user()->governorates()->sync($request->governorates);
-      }
-
-       if($request->has('blood_types'))
-
-      {
-
-        $request->user()->blood_types()->sync($request->blood_types);
-      }
-
+     
       $data=[
 
         'governorates' => $request->user()->governorates()->pluck('governorates.id')->toArray(),
@@ -302,7 +299,7 @@ class AuthController extends Controller
 
       ];
 
-       return responseJson('1','ﺚﻳﺪﺤﺘﻟا ﻢﺗ ',$data);
+       return responseJson('1','data updated successfully',$data);
 
     }
 
@@ -341,7 +338,7 @@ class AuthController extends Controller
       $request->user()->tokens()->create($request->all());
 
 
-       return responseJson('1','ﺢﻠﺠﻨﺑ ﻞﻴﺠﺴﺘﻟا ﻢﺗ');
+       return responseJson('1','Token created successfully  ');
 
 
   } 
@@ -370,7 +367,7 @@ class AuthController extends Controller
 
 
 
-       return responseJson('1','ﺡﺎﺠﻨﺑ ﻑﺬﺤﻟا ﻢﺗ');
+       return responseJson('1','deleted successfully');
 
 
   } 
@@ -379,6 +376,4 @@ class AuthController extends Controller
 
 
 
-
-  ///////////////////////////////////////////////////////////////////// 
 }

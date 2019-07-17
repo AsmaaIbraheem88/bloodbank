@@ -1,0 +1,125 @@
+@extends('layouts.app')
+
+@section('title')
+Clients
+@endsection
+
+
+@section('content')
+
+    <!-- Main content -->
+    <section class="content">
+
+      <!-- Default box -->
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title">List  of Clients</h3>
+
+          <div class="card-tools">
+            <button type="button" class="btn btn-tool" data-widget="collapse" data-toggle="tooltip" title="Collapse">
+              <i class="fas fa-minus"></i></button>
+            <button type="button" class="btn btn-tool" data-widget="remove" data-toggle="tooltip" title="Remove">
+              <i class="fas fa-times"></i></button>
+          </div>
+        </div>
+        <div class="card-body">
+       
+            
+            @include('flash::message')
+
+            @include('backend.clients.search-form')
+
+            @if (count($records))
+
+            <div class="table-responsive">
+
+                <table class="table table-bordered ">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Date Of Birth</th>
+                            <th>Blood Type</th>
+                            <th>City</th>
+                            <th>Last Donation Date</th>
+                            <th>Phone</th>
+                            <th>Status</th>
+                            <th class="text-center">Action</th>
+    
+                           
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($records as $record)
+                       
+                            <tr>
+                                <td>{{$loop->iteration}}</td>
+                                <td>{{$record->name}}</td>
+                                <td>{{$record->email}}</td>
+                                <td>{{$record->date_of_birth}}</td>
+                                <td>{{optional($record->blood_type)->name}}</td>
+                                <td>{{optional($record->city)->name}}</td>
+                                <td>{{$record->last_donation_date}}</td>
+                                <td>{{$record->phone}}</td>
+                                <td>
+                                
+                                  @if($record->is_active)
+                                    <p style="color: green">Active</p>
+                                  
+                                  @else
+                                    <p style="color: red">Inactive</p>
+                                  @endif
+
+                                </td>
+
+                               
+                               
+                                <td class="text-center">
+                                {!! Form::open ([
+
+                                'action' => ['ClientController@destroy', $record->id],
+                                'method' =>'delete'
+                                
+                                ]) !!}
+
+                                @if($record->is_active)
+                                   
+                                   <a href="{{url(route('client.toggle-activation',$record->id))}}" class="btn btn-success  btn-sm">de-active</a>
+                                
+                                @else
+                                    
+                                <a href="{{url(route('client.toggle-activation',$record->id))}}" class="btn btn-success  btn-sm">active</i></a>
+                                @endif
+
+                                <button type="submit" class="btn btn-danger btn-sm confirm">Delete</button>
+
+                                {!! Form::close() !!}
+
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tfoot>
+                </table>
+                {{$records->links()}}
+            </div>
+                @else
+                <div class="alert alert-danger" role="alert">
+                   There is no data
+                </div>
+            @endif
+
+        </div>
+        <!-- /.card-body -->
+        <div class="card-footer">
+          <!-- Footer -->
+        </div>
+        <!-- /.card-footer-->
+      </div>
+      <!-- /.card -->
+
+    </section>
+
+
+
+@endsection

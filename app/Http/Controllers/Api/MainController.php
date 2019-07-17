@@ -21,22 +21,7 @@ use Illuminate\Support\Facades\Auth;
 class MainController extends Controller
 {
    
- // public function responseJson($status,$msg,$data=null)
- //    {
- //     $response = [
-
- //      'status' =>$status,
- //      'msg' =>$msg,
- //      'data' =>$data,
-
- //     ];
-
- //     return response()->json($response);
-
-
- //    }
-
-    /////////////////////////////////////////////////////////
+ 
 
     public function governorates()
     {
@@ -95,7 +80,7 @@ class MainController extends Controller
      public function post(Request $request)
     {
 
-     $post = Post::with('category')->where('id',$request->id)->get();
+     $post = Post::with('category')->find($request->id);
 
      return responseJson('1','success',$post);
 
@@ -108,23 +93,24 @@ class MainController extends Controller
 
       $posts = Post::with('category')->where(function ($query) use($request){
 
-        if($request->has('category_id'))
+        if(!empty($request->category_id))
 
         {
           $query->where('category_id',$request->category_id);
 
         }
 
-        if($request->has('keyword'))
+        if(!empty($request->keyword))
 
         {
-          
-          $query->where('title','like','%'.$request->keyword.'%')
-                ->orWhere('body','like','%'.$request->keyword.'%');
+          $query->where(function ($query) use($request){
+            $query->where('title','like','%'.$request->keyword.'%')
+                  ->orWhere('body','like','%'.$request->keyword.'%');
+          });
          
         }
 
-      })->get();
+      })->latest()->paginate('20');
 
       return responseJson('1','success',$posts);
 
@@ -281,10 +267,10 @@ class MainController extends Controller
     {
       //create notification on database
 
-      $notifications = $donationRequest->notifications()->create([
+      $notifications = $donationRequest->notification()->create([
 
-        'title' => 'ﻚﻨﻣ ﻪﺒﻳﺮﻗ ﻉﺮﺒﺗ ﻪﻟﺎﺣ ﺪﺟﻮﻳ ',
-        'content' =>$donationRequest->blood_type->name .'ﻪﻠﻴﺼﻔﻟ ﻉﺮﺒﺗ ﺝﺎﺘﺤﻣ',
+        'title' => 'there is donation request near you ',
+        'content' =>$donationRequest->blood_type->name .' there is a blood type  that needs donation',
 
       ]);
 
@@ -315,7 +301,7 @@ class MainController extends Controller
 
     }
 
-    return responseJson('1','ﺡﺎﺠﻨﺑ ﻪﻓﺎﺿﻻا ﻢﺗ', compact('donationRequest'));
+    return responseJson('1','Donation created successfully', compact('donationRequest'));
 
   }
 
@@ -327,21 +313,21 @@ class MainController extends Controller
 
     $donationRequests = DonationRequest::where(function ($query) use($request){
 
-        if($request->has('blood_type_id'))
+        if(!empty($request->blood_type_id))
 
         {
           $query->where('blood_type_id',$request->blood_type_id);
 
         }
 
-        if($request->has('city_id'))
+        if(!empty($request->city_id))
 
         {
           $query->where('city_id',$request->city_id);
 
         }
 
-      })->get();
+      })->latest()->paginate(10);
 
       return responseJson('1','success',$donationRequests);
 
@@ -353,8 +339,27 @@ class MainController extends Controller
     public function donationRequest(Request $request )
     {
 
-      $donationRequest = DonationRequest::where('id',$request->id)->get();
+      $donationRequest = DonationRequest::with('city','client','blood_type')->find($request->donation_id);
+      //  dd($donationRequest);
 
+      if(!$donationRequest)
+      {
+        return responseJson('0','404 no donation found');
+      }
+
+    
+      if($request->user()->notifications()->where('donation_request_id',$donationRequest->id)->first())
+      {
+
+        $request->user()->notifications()->updateExistingPivot($donationRequest->notification->id,[
+
+        'is_read' => '1'
+
+        ]);
+
+      }
+
+      
       return responseJson('1','success',$donationRequest);
 
       
