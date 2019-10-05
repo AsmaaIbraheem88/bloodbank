@@ -108,7 +108,7 @@ class CategoryController extends Controller
         
         $record->update($request->all());
 
-        flash()->success('Category updated successfully');
+        flash()->success('category updated successfully');
 
         return redirect(route('category.index'));
     }
